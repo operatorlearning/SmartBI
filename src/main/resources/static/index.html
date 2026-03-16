@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartBI — 智能BI数据分析平台</title>
+    <!-- Element Plus CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.7.0/dist/index.css">
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <!-- Vue 3 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.27/dist/vue.global.prod.js"></script>
+    <!-- Vue Router -->
+    <script src="https://cdn.jsdelivr.net/npm/vue-router@4.3.2/dist/vue-router.global.prod.js"></script>
+    <!-- Element Plus -->
+    <script src="https://cdn.jsdelivr.net/npm/element-plus@2.7.0/dist/index.full.min.js"></script>
+    <!-- Element Plus Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/index.iife.min.js"></script>
+    <!-- Element Plus 中文 -->
+    <script src="https://cdn.jsdelivr.net/npm/element-plus@2.7.0/dist/locale/zh-cn.min.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.7.2/dist/axios.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; background: #f0f2f5; }
+        
+        .layout { min-height: 100vh; }
+        .layout-header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 0 24px; height: 60px; display: flex; 
+            align-items: center; justify-content: space-between; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            position: relative; z-index: 100;
+        }
+        .logo { color: #fff; font-size: 20px; font-weight: 700; letter-spacing: 1px; white-space: nowrap; }
+        .logo span { font-size: 12px; font-weight: 400; margin-left: 8px; opacity: 0.8; }
+        .header-right { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+        .header-right .el-button { color: #fff; border-color: rgba(255,255,255,0.5); }
+        .header-right .username { color: #fff; font-size: 14px; white-space: nowrap; }
+
+        .layout-content { padding: 24px; max-width: 1400px; margin: 0 auto; }
+        
+        .page-card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        .page-title { font-size: 22px; font-weight: 600; margin-bottom: 20px; color: #1a1a1a; }
+        
+        .stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 16px; min-width: 0; }
+        .stat-icon { width: 48px; height: 48px; min-width: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .stat-icon.purple { background: #f0e6ff; color: #764ba2; }
+        .stat-icon.blue { background: #e6f0ff; color: #3b82f6; }
+        .stat-icon.green { background: #e6fff0; color: #10b981; }
+        .stat-icon.orange { background: #fff3e6; color: #f59e0b; }
+        .stat-info h3 { font-size: 24px; font-weight: 700; color: #1a1a1a; line-height: 1.2; }
+        .stat-info p { font-size: 13px; color: #999; margin-top: 4px; white-space: nowrap; }
+
+        .chart-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 20px; }
+        .chart-item { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .chart-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+        .chart-preview { height: 260px; border-radius: 8px; background: #fafafa; overflow: hidden; }
+        .chart-meta { margin-top: 12px; clear: both; }
+        .chart-meta h4 { font-size: 15px; font-weight: 600; color: #333; }
+        .chart-meta p { font-size: 13px; color: #999; margin-top: 4px; }
+
+        .upload-area { border: 2px dashed #ddd; border-radius: 12px; padding: 40px; text-align: center; cursor: pointer; transition: border-color 0.3s; }
+        .upload-area:hover { border-color: #667eea; }
+        .upload-area .el-icon { font-size: 48px; color: #ccc; }
+        .upload-area p { margin-top: 8px; color: #999; }
+        
+        .gen-form { max-width: 680px; }
+        .analysis-box { background: #f8f9ff; border-radius: 8px; padding: 16px; margin-top: 12px; line-height: 1.7; color: #555; }
+        
+        .progress-card { text-align: center; padding: 40px; }
+        .progress-card h3 { margin-top: 16px; font-size: 18px; color: #333; }
+        .progress-card p { color: #999; margin-top: 8px; }
+
+        /* Auth pages */
+        .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .auth-card { background: #fff; border-radius: 16px; padding: 40px; width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .auth-card h2 { text-align: center; margin-bottom: 8px; font-size: 24px; color: #333; }
+        .auth-card .subtitle { text-align: center; color: #999; margin-bottom: 28px; font-size: 14px; }
+
+        .el-menu--horizontal { border-bottom: none !important; background: transparent !important; }
+        .el-menu--horizontal .el-menu-item { color: rgba(255,255,255,0.8) !important; font-size: 14px; border-bottom: none !important; }
+        .el-menu--horizontal .el-menu-item.is-active { color: #fff !important; font-weight: 600; }
+        .el-menu--horizontal .el-menu-item:hover { color: #fff !important; background: rgba(255,255,255,0.1) !important; }
+
+        .dataset-table .el-table { border-radius: 8px; }
+
+        /* 示例数据集卡片 */
+        .demo-section { margin-bottom: 24px; }
+        .demo-section-title { font-size: 18px; font-weight: 600; color: #333; margin-bottom: 4px; }
+        .demo-section-desc { font-size: 13px; color: #999; margin-bottom: 16px; }
+        .demo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+        .demo-card { background: #fff; border-radius: 14px; padding: 24px 20px 18px 20px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); cursor: default; transition: all 0.25s; border: 2px solid transparent; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+        .demo-card:hover { transform: translateY(-4px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); border-color: #eee; }
+        .demo-card.importing { opacity: 0.7; pointer-events: none; }
+        .demo-card-icon { font-size: 32px; margin-bottom: 8px; line-height: 1; }
+        .demo-card-name { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 6px; line-height: 1.3; }
+        .demo-card-desc { font-size: 12px; color: #888; line-height: 1.6; margin-bottom: 12px; flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .demo-card-footer { display: flex; align-items: center; justify-content: space-between; }
+        .demo-card-meta { font-size: 11px; color: #bbb; }
+        .demo-card-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 12px; }
+        .demo-card-tags span { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #f0f2f5; color: #666; line-height: 1.6; white-space: nowrap; }
+        .demo-card-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 4px; }
+        .demo-card-stripe { position: absolute; top: 0; left: 0; right: 0; height: 4px; z-index: 1; }
+
+        /* 响应式适配 */
+        @media (max-width: 1100px) {
+            .stat-cards { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 600px) {
+            .stat-cards { grid-template-columns: 1fr; }
+            .demo-grid { grid-template-columns: 1fr; }
+            .chart-grid { grid-template-columns: 1fr; }
+            .layout-content { padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <router-view></router-view>
+</div>
+
+<script>
+const { createApp, ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } = Vue;
+const { createRouter, createWebHashHistory, useRouter, useRoute } = VueRouter;
+
+// ==================== API 配置 ====================
+const BASE_URL = '/api';
+const api = axios.create({ baseURL: BASE_URL, timeout: 60000 });
+
+/** 修正 ECharts Option，确保标题/图例/坐标不重叠 */
+function fixChartOption(option) {
+    if (!option) return option;
+    // 标题：左上角 + 小字体
+    if (option.title) {
+        if (typeof option.title.text === 'string' && option.title.text.length > 20) {
+            option.title.text = option.title.text.substring(0, 20) + '...';
+        }
+        option.title.left = option.title.left || 'left';
+        option.title.top = option.title.top || '5';
+        option.title.textStyle = Object.assign({ fontSize: 14, fontWeight: 'bold' }, option.title.textStyle || {});
+    }
+    // 非饼图：添加 grid 留出边距
+    const hasPie = Array.isArray(option.series) && option.series.some(s => s.type === 'pie');
+    if (!hasPie) {
+        option.grid = Object.assign({ top: 60, left: 60, right: 30, bottom: 40, containLabel: true }, option.grid || {});
+    }
+    // 图例位置
+    if (option.legend && !option.legend.top) {
+        option.legend.top = '28';
+        option.legend.left = option.legend.left || 'center';
+    }
+    return option;
+}
+
+// 请求拦截器 — 自动附加 Token
+api.interceptors.request.use(config => {
+    const token = localStorage.getItem('token');
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+});
+
+// 响应拦截器 — 统一错误处理
+api.interceptors.response.use(
+    res => res.data,
+    err => {
+        const msg = err.response?.data?.message || err.message || '网络错误';
+        if (err.response?.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.hash = '#/login';
+            ElementPlus.ElMessage.error('登录已过期，请重新登录');
+        } else {
+            ElementPlus.ElMessage.error(msg);
+        }
+        return Promise.reject(err);
+    }
+);
+
+// ==================== 页面组件 ====================
+
+// ---------- 登录页 ----------
+const LoginPage = {
+    template: `
+    <div class="auth-page">
+        <div class="auth-card">
+            <h2>SmartBI</h2>
+            <p class="subtitle">智能BI数据分析平台</p>
+            <el-form :model="form" :rules="rules" ref="formRef" @submit.prevent="handleLogin">
+                <el-form-item prop="username">
+                    <el-input v-model="form.username" placeholder="用户名" size="large" prefix-icon="User" />
+                </el-form-item>
+                <el-form-item prop="password">
+                    <el-input v-model="form.password" type="password" placeholder="密码" size="large" prefix-icon="Lock" show-password />
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" size="large" style="width:100%" :loading="loading" @click="handleLogin">登 录</el-button>
+                </el-form-item>
+            </el-form>
+            <div style="text-align:center">
+                <el-link type="primary" @click="$router.push('/register')">没有账号？去注册</el-link>
+            </div>
+            <div style="text-align:center;margin-top:16px;color:#ccc;font-size:12px">
+                演示账号: admin / admin123
+            </div>
+        </div>
+    </div>`,
+    setup() {
+        const router = useRouter();
+        const formRef = ref(null);
+        const loading = ref(false);
+        const form = reactive({ username: '', password: '' });
+        const rules = {
+            username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+            password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+        };
+
+        const handleLogin = async () => {
+            await formRef.value?.validate();
+            loading.value = true;
+            try {
+                const res = await api.post('/user/login', form);
+                if (res.code === 200) {
+                    localStorage.setItem('token', res.data.token);
+                    localStorage.setItem('user', JSON.stringify(res.data.user));
+                    ElementPlus.ElMessage.success('登录成功');
+                    router.push('/');
+                } else {
+                    ElementPlus.ElMessage.error(res.message);
+                }
+            } finally { loading.value = false; }
+        };
+        return { form, rules, formRef, loading, handleLogin };
+    }
+};
+
+// ---------- 注册页 ----------
+const RegisterPage = {
+    template: `
+    <div class="auth-page">
+        <div class="auth-card">
+            <h2>注册账号</h2>
+            <p class="subtitle">创建你的 SmartBI 账号</p>
+            <el-form :model="form" :rules="rules" ref="formRef">
+                <el-form-item prop="username">
+                    <el-input v-model="form.username" placeholder="用户名 (3-20字符)" size="large" prefix-icon="User" />
+                </el-form-item>
+                <el-form-item prop="password">
+                    <el-input v-model="form.password" type="password" placeholder="密码 (6-32字符)" size="large" prefix-icon="Lock" show-password />
+                </el-form-item>
+                <el-form-item prop="confirmPassword">
+                    <el-input v-model="form.confirmPassword" type="password" placeholder="确认密码" size="large" prefix-icon="Lock" show-password />
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" size="large" style="width:100%" :loading="loading" @click="handleRegister">注 册</el-button>
+                </el-form-item>
+            </el-form>
+            <div style="text-align:center">
+                <el-link type="primary" @click="$router.push('/login')">已有账号？去登录</el-link>
+            </div>
+        </div>
+    </div>`,
+    setup() {
+        const router = useRouter();
+        const formRef = ref(null);
+        const loading = ref(false);
+        const form = reactive({ username: '', password: '', confirmPassword: '' });
+        const rules = {
+            username: [{ required: true, message: '请输入用户名', trigger: 'blur' }, { min: 3, max: 20, message: '3-20字符', trigger: 'blur' }],
+            password: [{ required: true, message: '请输入密码', trigger: 'blur' }, { min: 6, max: 32, message: '6-32字符', trigger: 'blur' }],
+            confirmPassword: [{ required: true, message: '请确认密码', trigger: 'blur' }]
+        };
+        const handleRegister = async () => {
+            await formRef.value?.validate();
+            if (form.password !== form.confirmPassword) {
+                ElementPlus.ElMessage.error('两次密码不一致');
+                return;
+            }
+            loading.value = true;
+            try {
+                const res = await api.post('/user/register', form);
+                if (res.code === 200) {
+                    ElementPlus.ElMessage.success('注册成功，请登录');
+                    router.push('/login');
+                } else {
+                    ElementPlus.ElMessage.error(res.message);
+                }
+            } finally { loading.value = false; }
+        };
+        return { form, rules, formRef, loading, handleRegister };
+    }
+};
+
+// ---------- 主布局 ----------
+const MainLayout = {
+    template: `
+    <div class="layout">
+        <header class="layout-header">
+            <div style="display:flex;align-items:center">
+                <div class="logo">SmartBI <span>智能BI数据分析平台</span></div>
+                <el-menu mode="horizontal" :default-active="activeMenu" router style="margin-left:32px">
+                    <el-menu-item index="/">首页</el-menu-item>
+                    <el-menu-item index="/dataset">数据集</el-menu-item>
+                    <el-menu-item index="/chart/gen">AI 分析</el-menu-item>
+                    <el-menu-item index="/chart/list">我的图表</el-menu-item>
+                </el-menu>
+            </div>
+            <div class="header-right">
+                <span class="username">{{ user?.username }}</span>
+                <el-button text @click="logout">退出</el-button>
+            </div>
+        </header>
+        <main class="layout-content">
+            <router-view></router-view>
+        </main>
+    </div>`,
+    setup() {
+        const router = useRouter();
+        const route = useRoute();
+        const user = ref(JSON.parse(localStorage.getItem('user') || '{}'));
+        const activeMenu = computed(() => route.path);
+        const logout = () => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            router.push('/login');
+        };
+        return { user, activeMenu, logout };
+    }
+};
+
+// ---------- 首页 ----------
+const HomePage = {
+    template: `
+    <div>
+        <div class="stat-cards">
+            <div class="stat-card">
+                <div class="stat-icon purple">📊</div>
+                <div class="stat-info"><h3>{{ stats.chartCount }}</h3><p>我的图表</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">📁</div>
+                <div class="stat-info"><h3>{{ stats.datasetCount }}</h3><p>数据集</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">✅</div>
+                <div class="stat-info"><h3>{{ stats.successCount }}</h3><p>分析成功</p></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">🤖</div>
+                <div class="stat-info"><h3>AI</h3><p>智能分析引擎</p></div>
+            </div>
+        </div>
+        <div class="page-card demo-section">
+            <h3 class="demo-section-title">📦 示例数据集</h3>
+            <p class="demo-section-desc">选择一个示例数据集，一键导入后即可体验 AI 智能分析</p>
+            <div class="demo-grid" v-if="demoList.length">
+                <div class="demo-card" :class="{ importing: importingFile === d.fileName }" v-for="d in demoList" :key="d.fileName">
+                    <div class="demo-card-stripe" :style="{ background: d.color }"></div>
+                    <div class="demo-card-icon">{{ d.icon }}</div>
+                    <div class="demo-card-name">{{ d.name }}</div>
+                    <div class="demo-card-desc">{{ d.description }}</div>
+                    <div class="demo-card-tags">
+                        <span v-for="tag in d.tags.split(',')" :key="tag">{{ tag }}</span>
+                        <span>{{ d.rows }}行 × {{ d.cols }}列</span>
+                    </div>
+                    <div class="demo-card-actions">
+                        <el-button size="small" type="primary" :loading="importingFile === d.fileName" @click="importDemo(d)">
+                            {{ importingFile === d.fileName ? '导入中...' : '一键导入' }}
+                        </el-button>
+                        <el-button size="small" @click="downloadDemo(d)">下载</el-button>
+                    </div>
+                </div>
+            </div>
+            <div v-else style="text-align:center;padding:20px;color:#ccc">加载中...</div>
+        </div>
+
+        <div class="page-card">
+            <h3 class="page-title">最近图表</h3>
+            <div v-if="charts.length === 0" style="text-align:center;padding:40px;color:#999">
+                <p>还没有图表，去 <el-link type="primary" @click="$router.push('/chart/gen')">AI 分析</el-link> 生成你的第一个图表吧！</p>
+            </div>
+            <div class="chart-grid" v-else>
+                <div class="chart-item" v-for="c in charts" :key="c.id" @click="$router.push('/chart/' + c.id)">
+                    <div class="chart-preview" :ref="el => chartRefs[c.id] = el"></div>
+                    <div class="chart-meta">
+                        <h4>{{ c.name }}</h4>
+                        <p>{{ c.goal }} · {{ formatTime(c.createTime) }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>`,
+    setup() {
+        const router = useRouter();
+        const stats = reactive({ chartCount: 0, datasetCount: 0, successCount: 0 });
+        const charts = ref([]);
+        const chartRefs = {};
+        const demoList = ref([]);
+        const importingFile = ref(null);
+
+        const formatTime = (t) => t ? t.replace('T', ' ').substring(0, 16) : '';
+
+        const renderCharts = () => {
+            nextTick(() => {
+                charts.value.forEach(c => {
+                    if (chartRefs[c.id] && c.chartOption && c.status === 'succeed') {
+                        try {
+                            const chart = echarts.init(chartRefs[c.id]);
+                            const option = typeof c.chartOption === 'string' ? JSON.parse(c.chartOption) : c.chartOption;
+                            chart.setOption(fixChartOption(option));
+                        } catch(e) { console.warn('图表渲染失败:', c.id, e); }
+                    }
+                });
+            });
+        };
+
+        const importDemo = async (d) => {
+            importingFile.value = d.fileName;
+            try {
+                const res = await api.post('/demo/import/' + encodeURIComponent(d.fileName));
+                if (res.code === 200) {
+                    ElementPlus.ElMessage.success('"' + d.name + '" 已导入到我的数据集！可前往 AI 分析页面使用');
+                    // 刷新统计
+                    const dsRes2 = await api.get('/dataset/list', { params: { current: 1, pageSize: 1 } });
+                    if (dsRes2.code === 200) stats.datasetCount = dsRes2.data.total || 0;
+                }
+            } catch(e) { console.error(e); } finally { importingFile.value = null; }
+        };
+
+        const downloadDemo = (d) => {
+            window.open(BASE_URL + '/demo/download/' + encodeURIComponent(d.fileName), '_blank');
+        };
+
+        onMounted(async () => {
+            // 加载示例数据集列表(无需登录)
+            try {
+                const demoRes = await api.get('/demo/list');
+                if (demoRes.code === 200) demoList.value = demoRes.data || [];
+            } catch(e) {}
+            try {
+                const [chartRes, dsRes] = await Promise.all([
+                    api.get('/chart/list', { params: { current: 1, pageSize: 6 } }),
+                    api.get('/dataset/list', { params: { current: 1, pageSize: 1 } })
+                ]);
+                if (chartRes.code === 200) {
+                    charts.value = chartRes.data.records || [];
+                    stats.chartCount = chartRes.data.total || 0;
+                    stats.successCount = charts.value.filter(c => c.status === 'succeed').length;
+                    renderCharts();
+                }
+                if (dsRes.code === 200) stats.datasetCount = dsRes.data.total || 0;
+            } catch(e) {}
+        });
+
+        return { stats, charts, chartRefs, formatTime, demoList, importingFile, importDemo, downloadDemo };
+    }
+};
+
+// ---------- 数据集页 ----------
+const DatasetPage = {
+    template: `
+    <div>
+        <div class="page-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+                <h3 class="page-title" style="margin-bottom:0">数据集管理</h3>
+                <el-button type="primary" @click="showUpload = true">上传 Excel</el-button>
+            </div>
+            <el-table :data="datasets" stripe style="width:100%" class="dataset-table">
+                <el-table-column prop="name" label="名称" min-width="180" />
+                <el-table-column prop="fileName" label="文件名" min-width="160" />
+                <el-table-column prop="rowCount" label="数据行数" width="100" />
+                <el-table-column prop="size" label="文件大小" width="100">
+                    <template #default="{row}">{{ formatSize(row.size) }}</template>
+                </el-table-column>
+                <el-table-column prop="createTime" label="上传时间" width="170">
+                    <template #default="{row}">{{ formatTime(row.createTime) }}</template>
+                </el-table-column>
+                <el-table-column label="操作" width="120" fixed="right">
+                    <template #default="{row}">
+                        <el-button size="small" type="primary" link @click="useDataset(row)">分析</el-button>
+                        <el-popconfirm title="确认删除？" @confirm="deleteDs(row.id)">
+                            <template #reference><el-button size="small" type="danger" link>删除</el-button></template>
+                        </el-popconfirm>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <div style="margin-top:16px;text-align:right">
+                <el-pagination v-model:current-page="query.current" v-model:page-size="query.pageSize" :total="total" :page-sizes="[10,20,50]" layout="total,sizes,prev,pager,next" @change="loadData" />
+            </div>
+        </div>
+
+        <el-dialog v-model="showUpload" title="上传 Excel 数据集" width="520px">
+            <el-form label-width="80px">
+                <el-form-item label="数据集名">
+                    <el-input v-model="uploadForm.name" placeholder="可选，默认使用文件名" />
+                </el-form-item>
+                <el-form-item label="描述">
+                    <el-input v-model="uploadForm.description" type="textarea" placeholder="可选" />
+                </el-form-item>
+                <el-form-item label="Excel文件">
+                    <el-upload ref="uploadRef" :auto-upload="false" :limit="1" accept=".xlsx,.xls,.csv" :on-change="onFileChange" drag>
+                        <div style="padding:20px">
+                            <p style="font-size:14px;color:#999">点击或拖拽上传 Excel / CSV 文件</p>
+                            <p style="font-size:12px;color:#ccc;margin-top:4px">支持 .xlsx .xls .csv，最大 20MB</p>
+                        </div>
+                    </el-upload>
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="showUpload = false">取消</el-button>
+                <el-button type="primary" :loading="uploading" @click="doUpload">上传</el-button>
+            </template>
+        </el-dialog>
+    </div>`,
+    setup() {
+        const router = useRouter();
+        const datasets = ref([]);
+        const total = ref(0);
+        const query = reactive({ current: 1, pageSize: 10 });
+        const showUpload = ref(false);
+        const uploading = ref(false);
+        const uploadForm = reactive({ name: '', description: '' });
+        const uploadFile = ref(null);
+
+        const formatTime = (t) => t ? t.replace('T', ' ').substring(0, 16) : '';
+        const formatSize = (s) => {
+            if (!s) return '-';
+            if (s < 1024) return s + 'B';
+            if (s < 1024 * 1024) return (s / 1024).toFixed(1) + 'KB';
+            return (s / 1024 / 1024).toFixed(1) + 'MB';
+        };
+
+        const loadData = async () => {
+            try {
+                const res = await api.get('/dataset/list', { params: query });
+                if (res.code === 200) {
+                    datasets.value = res.data.records || [];
+                    total.value = res.data.total || 0;
+                }
+            } catch(e) {}
+        };
+
+        const onFileChange = (file) => { uploadFile.value = file.raw; };
+
+        const doUpload = async () => {
+            if (!uploadFile.value) {
+                ElementPlus.ElMessage.warning('请选择文件');
+                return;
+            }
+            uploading.value = true;
+            try {
+                const fd = new FormData();
+                fd.append('file', uploadFile.value);
+                if (uploadForm.name) fd.append('name', uploadForm.name);
+                if (uploadForm.description) fd.append('description', uploadForm.description);
+                const res = await api.post('/dataset/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+                if (res.code === 200) {
+                    ElementPlus.ElMessage.success('上传成功');
+                    showUpload.value = false;
+                    uploadForm.name = '';
+                    uploadForm.description = '';
+                    uploadFile.value = null;
+                    loadData();
+                }
+            } finally { uploading.value = false; }
+        };
+
+        const deleteDs = async (id) => {
+            await api.delete('/dataset/' + id);
+            ElementPlus.ElMessage.success('已删除');
+            loadData();
+        };
+
+        const useDataset = (row) => {
+            router.push({ path: '/chart/gen', query: { datasetId: row.id, datasetName: row.name } });
+        };
+
+        onMounted(loadData);
+        return { datasets, total, query, showUpload, uploading, uploadForm, uploadFile, formatTime, formatSize, loadData, onFileChange, doUpload, deleteDs, useDataset };
+    }
+};
+
+// ---------- AI 图表生成页 ----------
+const ChartGenPage = {
+    template: `
+    <div>
+        <div class="page-card gen-form">
+            <h3 class="page-title">🤖 AI 智能分析</h3>
+            <el-form :model="form" label-width="100px">
+                <el-form-item label="数据来源">
+                    <el-radio-group v-model="dataSource">
+                        <el-radio value="dataset">从数据集选择</el-radio>
+                        <el-radio value="upload">上传 Excel</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+
+                <el-form-item label="选择数据集" v-if="dataSource === 'dataset'">
+                    <el-select v-model="form.datasetId" placeholder="请选择数据集" style="width:100%" filterable>
+                        <el-option v-for="d in datasets" :key="d.id" :label="d.name + ' (' + d.rowCount + '行)'" :value="d.id" />
+                    </el-select>
+                </el-form-item>
+
+                <el-form-item label="上传 Excel" v-if="dataSource === 'upload'">
+                    <el-upload :auto-upload="false" :limit="1" accept=".xlsx,.xls,.csv" :on-change="onFileChange" drag style="width:100%">
+                        <div style="padding:16px"><p style="color:#999;font-size:14px">点击或拖拽上传</p></div>
+                    </el-upload>
+                </el-form-item>
+
+                <el-form-item label="分析目标" required>
+                    <el-input v-model="form.goal" type="textarea" :rows="3" placeholder="例如: 分析各月份的销售趋势，找出销售高峰和低谷" />
+                </el-form-item>
+
+                <el-form-item label="图表类型">
+                    <el-select v-model="form.chartType" placeholder="AI 自动选择" clearable style="width:100%">
+                        <el-option label="柱状图 Bar" value="bar" />
+                        <el-option label="折线图 Line" value="line" />
+                        <el-option label="饼图 Pie" value="pie" />
+                        <el-option label="雷达图 Radar" value="radar" />
+                        <el-option label="散点图 Scatter" value="scatter" />
+                    </el-select>
+                </el-form-item>
+
+                <el-form-item label="图表名称">
+                    <el-input v-model="form.name" placeholder="可选，AI 自动生成" />
+                </el-form-item>
+
+                <el-form-item>
+                    <el-button type="primary" :loading="generating" @click="generate(false)" size="large">
+                        {{ generating ? '分析中...' : '🚀 立即分析' }}
+                    </el-button>
+                    <el-button @click="generate(true)" size="large">异步分析</el-button>
+                </el-form-item>
+            </el-form>
+        </div>
+
+        <!-- 异步任务进度 -->
+        <div class="page-card progress-card" v-if="asyncTaskId">
+            <el-progress type="circle" :percentage="taskProgress" :status="taskStatus === 'failed' ? 'exception' : (taskStatus === 'succeed' ? 'success' : '')" />
+            <h3>{{ taskStatus === 'succeed' ? '分析完成！' : (taskStatus === 'failed' ? '分析失败' : '正在分析...') }}</h3>
+            <p v-if="taskStatus === 'succeed'"><el-button type="primary" @click="$router.push('/chart/' + asyncChartId)">查看图表</el-button></p>
+        </div>
+
+        <!-- 同步结果 -->
+        <div class="page-card" v-if="result">
+            <h3 class="page-title" style="margin-bottom:12px">分析结果</h3>
+            <div style="height:440px;border-radius:8px;border:1px solid #f0f0f0" ref="resultChartRef"></div>
+            <div class="analysis-box" v-if="result.analysisResult" style="margin-top:16px">
+                <strong>📝 AI 分析结论：</strong><br>{{ result.analysisResult }}
+            </div>
+        </div>
+    </div>`,
+    setup() {
+        const route = useRoute();
+        const router = useRouter();
+        const form = reactive({ datasetId: null, goal: '', chartType: '', name: '' });
+        const dataSource = ref('dataset');
+        const datasets = ref([]);
+        const generating = ref(false);
+        const result = ref(null);
+        const resultChartRef = ref(null);
+        const uploadFile = ref(null);
+
+        // 异步任务
+        const asyncTaskId = ref(null);
+        const asyncChartId = ref(null);
+        const taskProgress = ref(0);
+        const taskStatus = ref('pending');
+        let sseSource = null;
+
+        const onFileChange = (file) => { uploadFile.value = file.raw; };
+
+        const generate = async (isAsync) => {
+            if (!form.goal) {
+                ElementPlus.ElMessage.warning('请输入分析目标');
+                return;
+            }
+            if (dataSource.value === 'dataset' && !form.datasetId) {
+                ElementPlus.ElMessage.warning('请选择数据集');
+                return;
+            }
+
+            // 如果上传文件 —— 先上传数据集
+            if (dataSource.value === 'upload') {
+                if (!uploadFile.value) {
+                    ElementPlus.ElMessage.warning('请选择文件');
+                    return;
+                }
+                generating.value = true;
+                try {
+                    const fd = new FormData();
+                    fd.append('file', uploadFile.value);
+                    const uploadRes = await api.post('/dataset/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+                    if (uploadRes.code === 200) {
+                        form.datasetId = uploadRes.data.id;
+                    } else { generating.value = false; return; }
+                } catch(e) { generating.value = false; return; }
+            }
+
+            generating.value = true;
+            result.value = null;
+            asyncTaskId.value = null;
+
+            try {
+                const url = isAsync ? '/chart/gen/async' : '/chart/gen/sync';
+                const payload = { ...form };
+                const res = await api.post(url, payload);
+                if (res.code === 200) {
+                    if (isAsync) {
+                        asyncChartId.value = res.data.id;
+                        asyncTaskId.value = res.data.id;
+                        startSSE(res.data.id);
+                        ElementPlus.ElMessage.success('已提交异步分析任务');
+                    } else {
+                        result.value = res.data;
+                        nextTick(() => renderResult());
+                        ElementPlus.ElMessage.success('分析完成');
+                    }
+                }
+            } finally { if (!asyncTaskId.value) generating.value = false; }
+        };
+
+        const renderResult = () => {
+            if (resultChartRef.value && result.value?.chartOption) {
+                try {
+                    const chart = echarts.init(resultChartRef.value);
+                    const option = typeof result.value.chartOption === 'string' ? JSON.parse(result.value.chartOption) : result.value.chartOption;
+                    chart.setOption(fixChartOption(option));
+                } catch(e) { console.warn('渲染失败', e); }
+            }
+        };
+
+        const startSSE = (chartId) => {
+            if (sseSource) sseSource.close();
+            sseSource = new EventSource(BASE_URL + '/ai/sse/' + chartId);
+            sseSource.addEventListener('progress', (e) => {
+                const data = JSON.parse(e.data);
+                taskProgress.value = data.progress;
+                taskStatus.value = data.status;
+                if (data.status === 'succeed' || data.status === 'failed') {
+                    sseSource.close();
+                    generating.value = false;
+                }
+            });
+            sseSource.addEventListener('error', () => {
+                sseSource.close();
+                generating.value = false;
+            });
+        };
+
+        onMounted(async () => {
+            // 加载数据集列表
+            try {
+                const res = await api.get('/dataset/list', { params: { current: 1, pageSize: 100 } });
+                if (res.code === 200) datasets.value = res.data.records || [];
+            } catch(e) {}
+            // 从数据集页跳转过来
+            if (route.query.datasetId) {
+                form.datasetId = Number(route.query.datasetId);
+            }
+        });
+
+        onUnmounted(() => { if (sseSource) sseSource.close(); });
+
+        return { form, dataSource, datasets, generating, result, resultChartRef, uploadFile, asyncTaskId, asyncChartId, taskProgress, taskStatus, onFileChange, generate };
+    }
+};
+
+// ---------- 图表列表页 ----------
+const ChartListPage = {
+    template: `
+    <div>
+        <div class="page-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+                <h3 class="page-title" style="margin-bottom:0">我的图表</h3>
+                <el-input v-model="searchName" placeholder="搜索图表名称" style="width:240px" clearable @clear="loadData" @keyup.enter="loadData">
+                    <template #append><el-button @click="loadData">搜索</el-button></template>
+                </el-input>
+            </div>
+            <div v-if="charts.length === 0" style="text-align:center;padding:40px;color:#999">暂无图表</div>
+            <div class="chart-grid" v-else>
+                <div class="chart-item" v-for="c in charts" :key="c.id" @click="$router.push('/chart/' + c.id)">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                        <el-tag :type="statusTagType(c.status)" size="small">{{ statusText(c.status) }}</el-tag>
+                        <el-popconfirm title="确认删除？" @confirm.stop="deleteChart(c.id)">
+                            <template #reference><el-button size="small" type="danger" link @click.stop>删除</el-button></template>
+                        </el-popconfirm>
+                    </div>
+                    <div class="chart-preview" :ref="el => chartRefs[c.id] = el"></div>
+                    <div class="chart-meta">
+                        <h4>{{ c.name }}</h4>
+                        <p>{{ c.goal }} · {{ formatTime(c.createTime) }}</p>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top:20px;text-align:right">
+                <el-pagination v-model:current-page="current" v-model:page-size="pageSize" :total="total" :page-sizes="[6,12,24]" layout="total,sizes,prev,pager,next" @change="loadData" />
+            </div>
+        </div>
+    </div>`,
+    setup() {
+        const charts = ref([]);
+        const total = ref(0);
+        const current = ref(1);
+        const pageSize = ref(6);
+        const searchName = ref('');
+        const chartRefs = {};
+
+        const formatTime = (t) => t ? t.replace('T', ' ').substring(0, 16) : '';
+        const statusText = (s) => ({ wait: '等待中', running: '生成中', succeed: '已完成', failed: '失败' }[s] || s);
+        const statusTagType = (s) => ({ wait: 'info', running: 'warning', succeed: 'success', failed: 'danger' }[s] || 'info');
+
+        const loadData = async () => {
+            try {
+                const res = await api.get('/chart/list', { params: { current: current.value, pageSize: pageSize.value, name: searchName.value || undefined } });
+                if (res.code === 200) {
+                    charts.value = res.data.records || [];
+                    total.value = res.data.total || 0;
+                    nextTick(() => {
+                        charts.value.forEach(c => {
+                            if (chartRefs[c.id] && c.chartOption && c.status === 'succeed') {
+                                try {
+                                    const chart = echarts.init(chartRefs[c.id]);
+                                    const opt = typeof c.chartOption === 'string' ? JSON.parse(c.chartOption) : c.chartOption;
+                                    chart.setOption(fixChartOption(opt));
+                                } catch(e) {}
+                            }
+                        });
+                    });
+                }
+            } catch(e) {}
+        };
+
+        const deleteChart = async (id) => {
+            await api.delete('/chart/' + id);
+            ElementPlus.ElMessage.success('已删除');
+            loadData();
+        };
+
+        onMounted(loadData);
+        return { charts, total, current, pageSize, searchName, chartRefs, formatTime, statusText, statusTagType, loadData, deleteChart };
+    }
+};
+
+// ---------- 图表详情页 ----------
+const ChartDetailPage = {
+    template: `
+    <div>
+        <div class="page-card" v-if="chart">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+                <h3 class="page-title" style="margin-bottom:0">{{ chart.name }}</h3>
+                <div>
+                    <el-tag :type="statusTagType(chart.status)" style="margin-right:8px">{{ statusText(chart.status) }}</el-tag>
+                    <el-button size="small" @click="$router.back()">返回</el-button>
+                </div>
+            </div>
+            <p style="color:#999;margin-bottom:16px">分析目标: {{ chart.goal }}</p>
+            <div v-if="chart.status === 'succeed'">
+                <div style="height:450px;border-radius:8px" ref="detailChartRef"></div>
+                <div class="analysis-box" v-if="chart.analysisResult" style="margin-top:20px">
+                    <strong>📝 AI 分析结论：</strong><br>{{ chart.analysisResult }}
+                </div>
+            </div>
+            <div v-else-if="chart.status === 'running' || chart.status === 'wait'" class="progress-card">
+                <el-progress type="circle" :percentage="30" status="warning" />
+                <h3>正在分析中...</h3>
+                <p>请稍后刷新页面查看结果</p>
+            </div>
+            <div v-else-if="chart.status === 'failed'" class="progress-card">
+                <el-progress type="circle" :percentage="100" status="exception" />
+                <h3>分析失败</h3>
+                <p>{{ chart.execMessage }}</p>
+            </div>
+        </div>
+    </div>`,
+    setup() {
+        const route = useRoute();
+        const chart = ref(null);
+        const detailChartRef = ref(null);
+
+        const statusText = (s) => ({ wait: '等待中', running: '生成中', succeed: '已完成', failed: '失败' }[s] || s);
+        const statusTagType = (s) => ({ wait: 'info', running: 'warning', succeed: 'success', failed: 'danger' }[s] || 'info');
+
+        onMounted(async () => {
+            try {
+                const res = await api.get('/chart/' + route.params.id);
+                if (res.code === 200) {
+                    chart.value = res.data;
+                    if (res.data.status === 'succeed' && res.data.chartOption) {
+                        nextTick(() => {
+                            if (detailChartRef.value) {
+                                const c = echarts.init(detailChartRef.value);
+                                const opt = typeof res.data.chartOption === 'string' ? JSON.parse(res.data.chartOption) : res.data.chartOption;
+                                c.setOption(fixChartOption(opt));
+                            }
+                        });
+                    }
+                }
+            } catch(e) {}
+        });
+
+        return { chart, detailChartRef, statusText, statusTagType };
+    }
+};
+
+// ==================== 路由 ====================
+const routes = [
+    { path: '/login', component: LoginPage },
+    { path: '/register', component: RegisterPage },
+    {
+        path: '/', component: MainLayout,
+        children: [
+            { path: '', component: HomePage },
+            { path: 'dataset', component: DatasetPage },
+            { path: 'chart/gen', component: ChartGenPage },
+            { path: 'chart/list', component: ChartListPage },
+            { path: 'chart/:id', component: ChartDetailPage }
+        ]
+    }
+];
+
+const router = createRouter({
+    history: createWebHashHistory(),
+    routes
+});
+
+// 路由守卫
+router.beforeEach((to, from, next) => {
+    const token = localStorage.getItem('token');
+    if (to.path !== '/login' && to.path !== '/register' && !token) {
+        next('/login');
+    } else {
+        next();
+    }
+});
+
+// ==================== App ====================
+const app = createApp({});
+app.use(router);
+app.use(ElementPlus, { locale: ElementPlusLocaleZhCn });
+// 注册图标
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+    app.component(key, component);
+}
+app.mount('#app');
+</script>
+</body>
+</html>
